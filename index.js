@@ -27,6 +27,7 @@ password:z.string().min(6,{ message: "Must be 6 or more characters long" })
 const url = 'mongodb+srv://aman_cjinc:JmS511HfcYcZkJ1M@ecom-backend.j0qv51u.mongodb.net/';
 const dbName = 'ecom-backend';
 
+
 const app = express();
 const PORT=3001
 mongoose.connect(url+dbName)
