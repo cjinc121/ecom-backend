@@ -1,5 +1,6 @@
 const express = require('express');
 const cors=require('cors')
+require("dotenv").config();
 const { default: mongoose } = require('mongoose');
 const Categories = require('./models/Categories');
 const bcrypt = require("bcrypt");
@@ -8,10 +9,9 @@ const User = require('./models/User');
 const Product = require('./models/Products');
 const jwt=require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
-const JWT_SECRET='1234567'
+const JWT_SECRET = process.env.JWT_SECRET
 const {z}=require('zod');
 const { ObjectId } = require('mongodb');
-
 
 const signupSchema =z.object( {
     firstName:z.string().min(1,{ message: "Must be 1 or more characters long" }),
@@ -24,12 +24,12 @@ email:z.string().email({ message: "Invalid email address" }),
 password:z.string().min(6,{ message: "Must be 6 or more characters long" })
 })
 
-const url = 'mongodb+srv://aman_cjinc:JmS511HfcYcZkJ1M@ecom-backend.j0qv51u.mongodb.net/';
-const dbName = 'ecom-backend';
+const url = process.env.MONGO_URL;
+const dbName = process.env.MONGO_NAME;
 
 
 const app = express();
-const PORT=3001
+const PORT = process.env.PORT
 mongoose.connect(url+dbName)
 .then(() => {
     console.log('Connected to MongoDB');
@@ -47,7 +47,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
     credentials: true,
-    origin: "http://localhost:3000"
+    origin: ["http://localhost:3000", "https://gentleman-shoes.vercel.app"]
 }));
 
 // unauthorised endpoints
