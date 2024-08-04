@@ -83,59 +83,73 @@ app.get('/api/products/:id', async (req, res) => {
 
 //auth endpoints
 app.post('/api/auth/signup', async (req, res) => {
-    const result = signupSchema.safeParse(req.body)
-    console.log(result.success)
-    if (result.success) {
-        const userAlreadyExists = await User.findOne({ email: req.body.email })
-        if (userAlreadyExists) {
-            res.status(400).send({ sucess: false, error: 'Email already Exists' });
+  const result = signupSchema.safeParse(req.body);
+  console.log(result.success);
+  if (result.success) {
+    const userAlreadyExists = await User.findOne({ email: req.body.email });
+    if (userAlreadyExists) {
+      res.status(400).send({ sucess: false, error: 'Email already Exists' });
+    } else {
+      const newUser = await User.create(req.body);
+      console.log('User:', newUser);
+      const token = jwt.sign(
+        { firstName: newUser.firstName, email: newUser.email, lastName: newUser.lastName },
+        JWT_SECRET,
+        { expiresIn: '1h' }
+      );
 
-        }
-        else {
-            const newUser = await User.create(req.body);
-            console.log('User:', newUser);
-            const token = jwt.sign({ firstName: newUser.firstName, email: newUser.email, lastName: newUser.lastName }, JWT_SECRET, { expiresIn: '1h' });
+      const cookieOptions = {
+        expires: new Date(Date.now() + 1 * 60 * 60 * 1000),
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+      };
 
-            const cookieOptions = {
-                expires: new Date(Date.now() + 1 * 60 * 60 * 1000),
-            };
-
-            newUser.password = undefined;
-            res.status(200).cookie("token", token, cookieOptions).send({ success: 'true', createdUser: newUser });
-        }
+      newUser.password = undefined;
+      res
+        .status(200)
+        .cookie('token', token, cookieOptions)
+        .send({ success: 'true', createdUser: newUser });
     }
-    else
-        res.status(400).send(result.error.issues)
-
-})
+  } else res.status(400).send(result.error.issues);
+});
 app.post('/api/auth/login', async (req, res) => {
-    const result = loginSchema.safeParse(req.body);
-    if (result.success) {
-        const user = await User.findOne({ email: req.body.email }).select('+password');
-        if (user) {
-            const isPasswordValid = await bcrypt.compare(req.body.password, user.password);
-            if (!isPasswordValid)
-                return res.status(401).send({ success: 'false', message: 'Wrong password' })
-            const userRes = await User.findOne({ email: req.body.email });
-            const token = jwt.sign({ firstName: userRes.firstName, email: userRes.email, lastName: userRes.lastName }, JWT_SECRET, { expiresIn: '1h' });
+  const result = loginSchema.safeParse(req.body);
+  if (result.success) {
+    const user = await User.findOne({ email: req.body.email }).select('+password');
+    if (user) {
+      const isPasswordValid = await bcrypt.compare(req.body.password, user.password);
+      if (!isPasswordValid)
+        return res.status(401).send({ success: 'false', message: 'Wrong password' });
+      const userRes = await User.findOne({ email: req.body.email });
+      const token = jwt.sign(
+        { firstName: userRes.firstName, email: userRes.email, lastName: userRes.lastName },
+        JWT_SECRET,
+        { expiresIn: '1h' }
+      );
 
-            const cookieOptions = {
-                expires: new Date(Date.now() + 1 * 60 * 60 * 1000),
-
-            };
-            return res.status(200).cookie("token", token, cookieOptions).send({ success: 'true', foundUser: userRes })
-        } else
-            return res.status(401).send({ success: 'false', message: 'Wrong email' })
-    }
-    res.status(200).send("recieved")
-
-})
+      const cookieOptions = {
+        expires: new Date(Date.now() + 1 * 60 * 60 * 1000),
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+      };
+      return res
+        .status(200)
+        .cookie('token', token, cookieOptions)
+        .send({ success: 'true', foundUser: userRes });
+    } else return res.status(401).send({ success: 'false', message: 'Wrong email' });
+  }
+  res.status(200).send('recieved');
+});
 app.get('/api/auth/logout', async (req, res) => {
     console.log('logout')
     try {
-        res.cookie("token", null, {
-            expires: new Date(Date.now()),
-            httpOnly: true,
+        res.cookie('token', null, {
+          expires: new Date(Date.now()),
+          httpOnly: true,
+          sameSite: 'none',
+          secure: true,
         });
 
         res.status(200).json({
